@@ -579,9 +579,9 @@ async function callGemini(key, prompt, b64){
   let last = 0;
   const ctl = new AbortController(), to = setTimeout(()=>ctl.abort(), 45000);
   try{
-  for(const model of ['gemini-2.5-flash','gemini-2.0-flash','gemini-flash-latest']){
-    const gc = {responseMimeType:'application/json', temperature:0.2, maxOutputTokens:1024};
-    if(model==='gemini-2.5-flash') gc.thinkingConfig = {thinkingBudget:0};
+  for(const model of ['gemini-2.5-flash-lite','gemini-2.0-flash-lite','gemini-2.0-flash','gemini-2.5-flash']){
+    const gc = {responseMimeType:'application/json', temperature:0.2, maxOutputTokens:700};
+    if(/2\.5/.test(model)) gc.thinkingConfig = {thinkingBudget:0};
     const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent', {
       method:'POST', headers:{'content-type':'application/json','x-goog-api-key':key},
       signal: ctl.signal,

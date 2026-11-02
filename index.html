@@ -728,6 +728,7 @@ async function pullInbox(){
       seen.add(m.id);
       if(!/^\d{4}-\d{2}-\d{2}$/.test(m.date||'') || !isFinite(+m.kcal)) continue;
       const day = getDay(m.date);
+      if(m.replaces) day.meals = day.meals.filter(x=>x.id!==m.replaces);
       if(day.meals.some(x=>x.id===m.id)) continue;
       day.meals.push({id:m.id, slot: SLOTS[m.slot] ? m.slot : 'p', name:String(m.name||'Posiłek').slice(0,80), kcal:Math.round(+m.kcal), p:Math.round(+m.p||0), src:'claude'});
       added.push(m);

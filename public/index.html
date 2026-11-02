@@ -712,6 +712,33 @@ $('#keyTest').onclick = async () => {
   finally{ b.disabled = false; b.textContent = 'Sprawdź klucz'; }
 };
 applyAI();
+// meals sent from Claude chat (inbox.json in the repo)
+const SEEN_LS = 'forma100-inbox';
+function seenIds(){ try{ return new Set(JSON.parse(localStorage.getItem(SEEN_LS)||'[]')); }catch(e){ return new Set(); } }
+let inboxBusy = false;
+async function pullInbox(){
+  if(inboxBusy || !navigator.onLine) return; inboxBusy = true;
+  try{
+    const res = await fetch('inbox.json?t='+Date.now(), {cache:'no-store'});
+    if(!res.ok) return;
+    const j = await res.json();
+    const seen = seenIds(), added = [];
+    for(const m of (j.meals||[])){
+      if(!m || !m.id || seen.has(m.id)) continue;
+      seen.add(m.id);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(m.date||'') || !isFinite(+m.kcal)) continue;
+      const day = getDay(m.date);
+      if(day.meals.some(x=>x.id===m.id)) continue;
+      day.meals.push({id:m.id, slot: SLOTS[m.slot] ? m.slot : 'p', name:String(m.name||'Posiłek').slice(0,80), kcal:Math.round(+m.kcal), p:Math.round(+m.p||0), src:'claude'});
+      added.push(m);
+    }
+    try{ localStorage.setItem(SEEN_LS, JSON.stringify([...seen].slice(-500))); }catch(e){}
+    if(added.length){ lsSave(); render(); toast(added.length===1 ? 'Od Claude: '+added[0].name+' ('+Math.round(added[0].kcal)+' kcal)' : 'Od Claude: '+added.length+' posiłki dodane'); }
+  }catch(e){} finally{ inboxBusy = false; }
+}
+pullInbox();
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) pullInbox(); });
+
 stamp();
 if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }

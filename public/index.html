@@ -590,13 +590,13 @@ async function callGemini(key, prompt, b64){
     last = res.status;
     if(res.status===404) continue;
     if(res.status===429) throw {code:'rate_limited'};
-    if(res.status===400 || res.status===401 || res.status===403){ const t = await res.text(); if(/API key|API_KEY|PERMISSION/i.test(t)) throw {code:'bad_key'}; throw {code:'server'}; }
-    if(!res.ok) throw {code:'server'};
+    if(res.status===400 || res.status===401 || res.status===403){ const t = await res.text().catch(()=>''); if(/API key|API_KEY|PERMISSION/i.test(t)) throw {code:'bad_key'}; throw {code:'server', detail: model+' · '+res.status+': '+t.slice(0,180)}; }
+    if(!res.ok){ const t = await res.text().catch(()=>''); throw {code:'server', detail: model+' · '+res.status+': '+t.slice(0,180)}; }
     const j = await res.json();
     const txt = (((j.candidates||[])[0]||{}).content||{}).parts?.map(p=>p.text||'').join('') || '';
     return parseLoose(txt);
   }
-  throw {code:'server'};
+  throw {code:'server', detail: 'żaden model nie odpowiedział (ostatni status '+last+')'};
   } catch(e){ if(e && e.name==='AbortError') throw {code:'slow'}; throw e; }
   finally{ clearTimeout(to); }
 }
@@ -615,7 +615,7 @@ async function askServer(prompt, image){
     let b64 = null;
     if(image){ try{ b64 = await shrink(image); }catch(e){ throw {code:'image_rejected'}; } }
     try{ return await callGemini(key, prompt, b64); }
-    catch(e){ if(e && e.code && e.code!=='slow') throw e; if(wentHidden) throw {code:'background'}; if(e && e.code) throw e; throw {code: navigator.onLine ? 'server' : 'offline'}; }
+    catch(e){ if(e && e.code && e.code!=='slow') throw e; if(wentHidden) throw {code:'background'}; if(e && e.code) throw e; throw {code: navigator.onLine ? 'server' : 'offline', detail: 'połączenie: '+String(e && (e.message||e.name)||e)}; }
   }
   const body = {prompt};
   if(image){ try{ body.image = await shrink(image); }catch(e){ throw {code:'image_rejected'}; } }
@@ -645,7 +645,7 @@ async function runAI(btn, input, images){
     $('#aiAdd').onclick = () => { const kc = +$('#aiKcal').value || aiResult.kcal; addMeal({name:aiResult.name, kcal:kc, p:aiResult.p, src: images?'zdjęcie':'opis'}); out.hidden=true; aiResult=null; if(images){ photoFile=null; $('#photoBox').hidden=true; $('#photoNote').value=''; $('#photoGo').disabled=true; } else $('#textIn').value=''; };
   }catch(e){
     const code = e && e.code;
-        out.innerHTML='<div class="result">'+(ERR[code]||'Coś poszło nie tak. Spróbuj ponownie.')+'<button class="btn primary" id="aiRetry">Spróbuj ponownie</button></div>'; $('#aiRetry').onclick = () => runAI(btn, input, images);
+        out.innerHTML='<div class="result">'+(ERR[code]||'Coś poszło nie tak. Spróbuj ponownie.')+(e && e.detail?'<div class="note" style="margin-top:6px">Szczegóły: '+esc(e.detail)+'</div>':'')+'<button class="btn primary" id="aiRetry">Spróbuj ponownie</button></div>'; $('#aiRetry').onclick = () => runAI(btn, input, images);
   }finally{ clearInterval(tick); btn.disabled = (btn.id==='photoGo') ? !(photoFile&&canImages) : false; }
 }
 $('#photoGo').onclick = () => { if(!photoFile) return; const note=$('#photoNote').value.trim(); runAI($('#photoGo'), PROMPT+' Na zdjęciu jest posiłek.'+(note?' Dopisek użytkownika: '+note:''), photoFile); };

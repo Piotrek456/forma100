@@ -198,7 +198,7 @@ nav button[aria-current=page]{color:var(--accent)}
         <button class="btn primary" id="handGo">Dodaj</button>
       </div>
       <div id="aiOut" hidden></div>
-      <p class="note" id="aiOff" hidden>Liczenie kalorii jest chwilowo niedostępne. Dodawaj posiłki ręcznie albo z zakładki Dieta.</p>
+      <p class="note" id="aiOff" hidden>Żeby liczyć kalorie ze zdjęcia, dodaj klucz AI w zakładce <b>Postęp → Liczenie kalorii</b>.</p>
     </div>
 
     <div class="card">
@@ -252,7 +252,11 @@ nav button[aria-current=page]{color:var(--accent)}
       <div style="overflow-x:auto"><table id="hist"></table></div>
     </div>
     <div class="card">
-      <h3>Ustawienia</h3>
+      <h3>Liczenie kalorii (klucz AI)</h3>
+      <p class="note" style="margin:0">Wklej klucz Google Gemini (zaczyna się od <b>AIza</b>, darmowy) albo Claude (zaczyna się od <b>sk-ant-</b>, płatny). Klucz zostaje tylko w tym telefonie.</p>
+      <div class="stepsin"><input type="password" id="keyIn" autocomplete="off" placeholder="Wklej klucz"><button class="btn primary" id="keyGo">Zapisz</button></div>
+      <div class="row"><span class="pill" id="keyState">brak klucza</span><button class="btn sm" id="keyTest">Sprawdź klucz</button><button class="btn sm" id="keyDel">Usuń</button></div>
+      <h3 style="margin-top:8px">Ustawienia</h3>
       <label class="small" for="startIn">Pierwszy dzień planu</label>
       <div class="stepsin"><input type="date" id="startIn"><button class="btn" id="startGo">Zmień</button></div>
       <h3 style="margin-top:8px">Kopia zapasowa</h3>
@@ -352,8 +356,12 @@ let tab = 'dzis';
 let mode = 'photo';
 let photoFile = null;
 let aiResult = null;
-const AI_ON = /netlify\.app$/.test(location.hostname) || location.hostname==='localhost';
-let canImages = AI_ON;
+const SERVER_AI = /netlify\.app$/.test(location.hostname);
+const KEY_LS = 'forma100-key';
+function getKey(){ try{ return localStorage.getItem(KEY_LS)||''; }catch(e){ return ''; } }
+function keyKind(k){ return /^sk-ant-/.test(k) ? 'claude' : /^AIza/.test(k) ? 'gemini' : ''; }
+const aiOn = () => SERVER_AI || !!keyKind(getKey());
+let canImages = true;
 
 const dayNo = k => diff(profile.start, k) + 1;
 const getDay = k => days[k] || (days[k] = {meals:[], sets:[], max:null, test:null, gtg:null, steps:null, weight:null});
@@ -555,8 +563,62 @@ async function shrink(file){
     return c.toDataURL('image/jpeg',0.8).split(',')[1];
   } finally { URL.revokeObjectURL(url); }
 }
+
+async function callGemini(key, prompt, b64){
+  const parts = [{text: prompt + '\nOdpowiedz wyłącznie obiektem JSON.'}];
+  if(b64) parts.unshift({inline_data:{mime_type:'image/jpeg', data:b64}});
+  let last = 0;
+  for(const model of ['gemini-2.5-flash','gemini-2.0-flash','gemini-flash-latest']){
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key), {
+      method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({contents:[{role:'user', parts}], generationConfig:{responseMimeType:'application/json', temperature:0.2}})
+    });
+    last = res.status;
+    if(res.status===404) continue;
+    if(res.status===429) throw {code:'rate_limited'};
+    if(res.status===400 || res.status===401 || res.status===403){ const t = await res.text(); if(/API key|API_KEY|PERMISSION/i.test(t)) throw {code:'bad_key'}; throw {code:'server'}; }
+    if(!res.ok) throw {code:'server'};
+    const j = await res.json();
+    const txt = (((j.candidates||[])[0]||{}).content||{}).parts?.map(p=>p.text||'').join('') || '';
+    return parseLoose(txt);
+  }
+  throw {code: last===404 ? 'server' : 'server'};
+}
+async function callClaude(key, prompt, b64){
+  const content = [];
+  if(b64) content.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}});
+  content.push({type:'text', text: prompt + '\nOdpowiedz wyłącznie obiektem JSON, bez innego tekstu.'});
+  for(const model of ['claude-haiku-4-5','claude-sonnet-4-5','claude-3-5-haiku-latest']){
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model, max_tokens:1200, messages:[{role:'user', content}]})
+    });
+    if(res.status===404) continue;
+    if(res.status===401 || res.status===403) throw {code:'bad_key'};
+    if(res.status===429) throw {code:'rate_limited'};
+    if(res.status===400){ const t = await res.text(); if(/credit|billing|balance/i.test(t)) throw {code:'no_credit'}; if(/model/i.test(t)) continue; throw {code:'server'}; }
+    if(!res.ok) throw {code:'server'};
+    const j = await res.json();
+    return parseLoose((j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join(''));
+  }
+  throw {code:'server'};
+}
+function parseLoose(t){
+  try{ return JSON.parse(t); }catch(e){}
+  const f = t.match(/```(?:json)?\s*([\s\S]*?)```/); if(f){ try{ return JSON.parse(f[1]); }catch(e){} }
+  const a=t.indexOf('{'), b=t.lastIndexOf('}'); if(a>=0&&b>a){ try{ return JSON.parse(t.slice(a,b+1)); }catch(e){} }
+  throw {code:'invalid_json'};
+}
 async function askServer(prompt, image){
   if(!navigator.onLine) throw {code:'offline'};
+  const key = getKey(), kind = keyKind(key);
+  if(kind){
+    let b64 = null;
+    if(image){ try{ b64 = await shrink(image); }catch(e){ throw {code:'image_rejected'}; } }
+    try{ return kind==='gemini' ? await callGemini(key, prompt, b64) : await callClaude(key, prompt, b64); }
+    catch(e){ if(e && e.code) throw e; throw {code:'offline'}; }
+  }
   const body = {prompt};
   if(image){ try{ body.image = await shrink(image); }catch(e){ throw {code:'image_rejected'}; } }
   let res;
@@ -569,7 +631,7 @@ async function askServer(prompt, image){
   if(!j || j.error) throw {code: (j && j.code) || 'server'};
   return j;
 }
-const ERR = {offline:'Brak internetu. Spróbuj, gdy wróci zasięg, albo dodaj ręcznie.', too_big:'Zdjęcie jest za duże. Wybierz inne.', server:'Serwer nie odpowiedział. Spróbuj ponownie za chwilę.', not_granted:'Nie zezwolono na użycie Claude. Dodawaj ręcznie.', sampling_disabled:'Claude jest niedostępny na tym koncie.', rate_limited:'Za dużo zapytań. Spróbuj za chwilę.', image_rejected:'Tego zdjęcia nie da się odczytać. Wybierz inne (JPG lub PNG).', session_expired:'Zaloguj się ponownie do Claude.', refused:'Nie udało się ocenić tego posiłku. Opisz go słowami.', invalid_json:'Nie udało się odczytać wyniku. Spróbuj jeszcze raz.'};
+const ERR = {bad_key:'Klucz AI jest nieprawidłowy. Sprawdź go w zakładce Postęp.', no_credit:'Na koncie Claude (Anthropic) brakuje środków. Doładuj je albo użyj klucza Gemini.', offline:'Brak internetu. Spróbuj, gdy wróci zasięg, albo dodaj ręcznie.', too_big:'Zdjęcie jest za duże. Wybierz inne.', server:'Serwer nie odpowiedział. Spróbuj ponownie za chwilę.', not_granted:'Nie zezwolono na użycie Claude. Dodawaj ręcznie.', sampling_disabled:'Claude jest niedostępny na tym koncie.', rate_limited:'Limit zapytań AI wyczerpany. Spróbuj za kilka minut.', image_rejected:'Tego zdjęcia nie da się odczytać. Wybierz inne (JPG lub PNG).', session_expired:'Zaloguj się ponownie do Claude.', refused:'Nie udało się ocenić tego posiłku. Opisz go słowami.', invalid_json:'Nie udało się odczytać wyniku. Spróbuj jeszcze raz.'};
 const PROMPT = 'Jesteś dietetykiem. Oszacuj kaloryczność posiłku zjedzonego przez dorosłego mężczyznę na diecie redukcyjnej. Rozpoznaj produkty, przyjmij realistyczne gramatury (porcje polskie, domowe) i policz kcal oraz białko. Odpowiedz wyłącznie JSON w formacie: {"name":"krótka nazwa po polsku","items":[{"name":"produkt","grams":120,"kcal":200,"protein":25}],"kcal":sumaKcal,"protein":sumaBiałka,"note":"jedno krótkie zdanie po polsku o tym, jak pewne jest oszacowanie"}.';
 async function runAI(btn, input, images){
     const out = $('#aiOut'); out.hidden=false; out.innerHTML='<div class="result"><span class="muted">Liczę kalorie…</span></div>';
@@ -628,7 +690,30 @@ $('#impIn').onchange = async e => {
   }catch(err){ toast('To nie jest plik kopii Forma 100.'); }
   e.target.value='';
 };
-if(!AI_ON){ $('#m-photo').hidden=true; $('#m-text').hidden=true; setMode('hand'); }
+function applyAI(){
+  const on = aiOn();
+  $('#m-photo').hidden = !on; $('#m-text').hidden = !on; $('#aiOff').hidden = on;
+  if(!on && mode!=='hand') setMode('hand');
+  if(on && mode==='hand' && !applyAI.done) setMode('photo');
+  applyAI.done = true;
+  const k = getKey(), kind = keyKind(k);
+  $('#keyState').textContent = kind==='gemini' ? 'Gemini ✓' : kind==='claude' ? 'Claude ✓' : (SERVER_AI ? 'serwer' : 'brak klucza');
+  $('#keyState').className = 'pill' + (kind ? ' good' : '');
+}
+$('#keyGo').onclick = () => {
+  const v = $('#keyIn').value.trim();
+  if(!keyKind(v)){ toast('Klucz powinien zaczynać się od AIza (Gemini) albo sk-ant- (Claude).'); return; }
+  try{ localStorage.setItem(KEY_LS, v); }catch(e){ toast('Nie udało się zapisać klucza.'); return; }
+  $('#keyIn').value=''; applyAI(); toast('Klucz zapisany');
+};
+$('#keyDel').onclick = () => { try{ localStorage.removeItem(KEY_LS); }catch(e){} applyAI(); toast('Klucz usunięty'); };
+$('#keyTest').onclick = async () => {
+  const b = $('#keyTest'); b.disabled = true; b.textContent = 'Sprawdzam…';
+  try{ const r = await askServer('Podaj kaloryczność: 1 banan średni. Format JSON: {"name":"...","kcal":0,"protein":0}'); toast('Działa: banan ≈ '+Math.round(+r.kcal||0)+' kcal'); }
+  catch(e){ toast(ERR[e && e.code] || 'Nie działa. Sprawdź klucz i internet.'); }
+  finally{ b.disabled = false; b.textContent = 'Sprawdź klucz'; }
+};
+applyAI();
 stamp();
 if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }

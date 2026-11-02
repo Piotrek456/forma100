@@ -122,6 +122,12 @@ textarea{resize:vertical;min-height:70px}
 .stepsin{display:flex;gap:8px}
 .stepsin input{flex:1}
 
+/* rest timer */
+.rest{position:fixed;left:0;right:0;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:6;padding:0 max(12px,env(safe-area-inset-left,0px)) 0 max(12px,env(safe-area-inset-right,0px));pointer-events:none}
+.rest-in{pointer-events:auto;max-width:560px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:12px 14px;display:flex;align-items:center;gap:12px}
+.rest-in .num{font-size:40px;line-height:1}
+.rest-in .bar{flex:1}
+.rest-in .bar i{transition:none}
 /* chart */
 .chart{width:100%;overflow-x:auto}
 .chart svg{display:block;width:100%;height:auto}
@@ -276,6 +282,11 @@ nav button[aria-current=page]{color:var(--accent)}
   </section>
 </main>
 
+<div class="rest" id="rest" hidden><div class="rest-in" role="timer" aria-live="off">
+  <div><div class="label">Odpoczynek</div><div class="num" id="restN">1:30</div></div>
+  <div class="bar"><i id="restBar" style="width:0"></i></div>
+  <button class="btn sm" id="restStop">Pomiń</button>
+</div></div>
 <nav><div class="in">
   <button data-go="dzis" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="7"/><path d="M12 9v4l2 2M9 3h6"/></svg>Dziś</button>
   <button data-go="dieta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11h16a8 8 0 0 1-16 0zM8 7c0-2 2-2 2-4M13 7c0-2 2-2 2-4"/></svg>Dieta</button>
@@ -656,9 +667,25 @@ async function runAI(btn, input, images){
 $('#photoGo').onclick = () => { if(!photoFile) return; const note=$('#photoNote').value.trim(); runAI($('#photoGo'), PROMPT+' Na zdjęciu jest posiłek.'+(note?' Dopisek użytkownika: '+note:''), photoFile); };
 $('#textGo').onclick = () => { const t=$('#textIn').value.trim(); if(!t){ toast('Opisz, co zjadłeś.'); return; } runAI($('#textGo'), PROMPT+' Opis posiłku: '+t.slice(0,2000)); };
 
+let restEnd = 0, restTick = null, audioCtx = null;
+function beep(){ try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value=880; g.gain.value=0.25; o.start(); o.stop(audioCtx.currentTime+0.4); }catch(e){} }
+function restUpdate(total){
+  const left = Math.max(0, Math.ceil((restEnd - Date.now())/1000));
+  $('#restN').textContent = Math.floor(left/60)+':'+pad(left%60);
+  $('#restBar').style.width = Math.min(100, (total-left)/total*100)+'%';
+  if(left<=0){ stopRest(); try{ navigator.vibrate && navigator.vibrate([250,120,250]); }catch(e){} beep(); toast('Koniec odpoczynku. Następna seria!'); }
+}
+function startRest(sec){
+  audioCtx = audioCtx || null; try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); audioCtx.resume && audioCtx.resume(); }catch(e){}
+  clearInterval(restTick); restEnd = Date.now()+sec*1000; $('#rest').hidden = false; restUpdate(sec);
+  restTick = setInterval(()=>restUpdate(sec), 500);
+}
+function stopRest(){ clearInterval(restTick); restTick = null; $('#rest').hidden = true; }
+$('#restStop').onclick = stopRest;
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && restTick && restEnd) { /* timer uses wall clock; catches up */ } });
 $('#pushCard').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return; const day = getDay(view);
-  if(b.dataset.set!==undefined){ const i=+b.dataset.set; day.sets[i] = !day.sets[i]; saveDay(view); renderTraining(); }
+  if(b.dataset.set!==undefined){ const i=+b.dataset.set; day.sets[i] = !day.sets[i]; saveDay(view); renderTraining(); if(day.sets[i]) startRest(90); }
   else if(b.dataset.gtg!==undefined){ const i=+b.dataset.gtg; day.gtg = (day.gtg||0)>i ? i : i+1; saveDay(view); renderTraining(); }
   else if(b.id==='maxGo'){ const v=+$('#maxIn').value; if(!v){ toast('Wpisz liczbę pompek.'); return; } day.max=v; saveDay(view); renderTraining(); toast('Zapisano: '+v+' pompek'); }
   else if(b.id==='testGo'){ const v=+$('#testIn').value; if(!v){ toast('Wpisz wynik.'); return; } day.test=v; saveDay(view); renderTraining(); toast('Wynik testu: '+v); }

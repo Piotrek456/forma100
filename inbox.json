@@ -1,5 +1,20 @@
 {
   "meals": [
-    {"id": "c-20261102-0840", "date": "2026-11-02", "slot": "s", "name": "Kawa z fusami 250 ml, 2 łyżeczki cukru", "kcal": 45, "p": 0}
+    {
+      "id": "c-20261102-0840",
+      "date": "2026-11-02",
+      "slot": "s",
+      "name": "Kawa z fusami 250 ml, 2 łyżeczki cukru",
+      "kcal": 45,
+      "p": 0
+    },
+    {
+      "id": "c-20261102-0842",
+      "date": "2026-11-02",
+      "slot": "s",
+      "name": "Dzik Energy Grape 200 ml (bez cukru)",
+      "kcal": 4,
+      "p": 0
+    }
   ]
 }

@@ -48,6 +48,14 @@
       "name": "Ziemniaki gotowane 250 g, pulpety ze słoika Biedronka 120 g z sosem",
       "kcal": 400,
       "p": 17
+    },
+    {
+      "id": "c-20261102-1647",
+      "date": "2026-11-02",
+      "slot": "p",
+      "name": "Dzik Energy 400 ml (bez cukru)",
+      "kcal": 8,
+      "p": 0
     }
   ]
 }

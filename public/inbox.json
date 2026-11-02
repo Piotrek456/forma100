@@ -80,6 +80,14 @@
       "name": "Dzik Energy 250 ml (bez cukru), 22:45",
       "kcal": 5,
       "p": 0
+    },
+    {
+      "id": "c-20261102-2400",
+      "date": "2026-11-02",
+      "slot": "k",
+      "name": "Serek wiejski lekki 200 g (drugi kubek)",
+      "kcal": 166,
+      "p": 22
     }
   ]
 }

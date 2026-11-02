@@ -32,6 +32,14 @@
       "name": "Owsianka: mleko 3,2% 250 ml, płatki 70 g, Whey Mix Dzik 33 g, banan",
       "kcal": 650,
       "p": 43
+    },
+    {
+      "id": "c-20261102-0859",
+      "date": "2026-11-02",
+      "slot": "s",
+      "name": "Kawa rozpuszczalna 400 ml z mlekiem 3,2% 100 ml",
+      "kcal": 65,
+      "p": 4
     }
   ]
 }

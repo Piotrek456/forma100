@@ -8,9 +8,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Forma 100">
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="apple-touch-icon" href="/icon-180.png">
-<link rel="icon" href="/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
 <title>Forma 100</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
@@ -352,7 +352,8 @@ let tab = 'dzis';
 let mode = 'photo';
 let photoFile = null;
 let aiResult = null;
-let canImages = true;
+const AI_ON = /netlify\.app$/.test(location.hostname) || location.hostname==='localhost';
+let canImages = AI_ON;
 
 const dayNo = k => diff(profile.start, k) + 1;
 const getDay = k => days[k] || (days[k] = {meals:[], sets:[], max:null, test:null, gtg:null, steps:null, weight:null});
@@ -559,7 +560,7 @@ async function askServer(prompt, image){
   const body = {prompt};
   if(image){ try{ body.image = await shrink(image); }catch(e){ throw {code:'image_rejected'}; } }
   let res;
-  try{ res = await fetch('/api/kcal', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body)}); }
+  try{ res = await fetch('api/kcal', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body)}); }
   catch(e){ throw {code:'offline'}; }
   if(res.status===429) throw {code:'rate_limited'};
   if(res.status===413) throw {code:'too_big'};
@@ -627,9 +628,10 @@ $('#impIn').onchange = async e => {
   }catch(err){ toast('To nie jest plik kopii Forma 100.'); }
   e.target.value='';
 };
+if(!AI_ON){ $('#m-photo').hidden=true; $('#m-text').hidden=true; setMode('hand'); }
 stamp();
 if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 })();
 </script>
 </body>

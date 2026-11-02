@@ -91,6 +91,10 @@ textarea{resize:vertical;min-height:70px}
 .photo{position:relative;border:1.5px dashed var(--line);border-radius:12px;padding:18px;text-align:center;color:var(--muted)}
 .photo img{border-radius:10px;max-height:220px;object-fit:cover;width:100%}
 .photo input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pick label{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;text-align:center;cursor:pointer}
+.pick svg{width:26px;height:26px}
+.pick input{display:none}
 .result{background:var(--accent-soft);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px}
 
 /* diet */
@@ -180,11 +184,15 @@ nav button[aria-current=page]{color:var(--accent)}
         <button id="m-hand" aria-pressed="false">Ręcznie</button>
       </div>
       <div id="p-photo" class="col" style="display:flex;flex-direction:column;gap:10px">
-        <label class="photo" id="photoBox">
-          <span id="photoTxt">Zrób zdjęcie talerza lub wybierz z galerii</span>
-          <img id="photoPrev" alt="Podgląd zdjęcia posiłku" hidden>
-          <input type="file" id="photoIn" accept="image/*" capture="environment">
-        </label>
+        <div class="pick">
+          <label class="btn" for="photoCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Zrób zdjęcie</label>
+          <label class="btn" for="photoLib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>Z biblioteki</label>
+          <input type="file" id="photoCam" accept="image/*" capture="environment">
+          <input type="file" id="photoLib" accept="image/*">
+        </div>
+        <div class="photo" id="photoBox" hidden>
+          <img id="photoPrev" alt="Podgląd zdjęcia posiłku">
+        </div>
         <input type="text" id="photoNote" placeholder="Dopisek, np. „ryż ok. 150 g, sos śmietanowy”">
         <button class="btn primary" id="photoGo" disabled>Policz kalorie ze zdjęcia</button>
       </div>
@@ -550,7 +558,8 @@ $('#diet').onclick = e => {
 };
 $('#handGo').onclick = () => { const name=$('#handName').value.trim()||'Posiłek', kc=+$('#handKcal').value, p=+$('#handProt').value||0; if(!kc){ toast('Wpisz liczbę kalorii.'); return; } addMeal({name, kcal:kc, p, src:'ręcznie'}); $('#handName').value=$('#handKcal').value=$('#handProt').value=''; };
 
-$('#photoIn').onchange = e => { const f = e.target.files && e.target.files[0]; if(!f) return; photoFile=f; const img=$('#photoPrev'); img.src=URL.createObjectURL(f); img.hidden=false; $('#photoTxt').hidden=true; $('#photoGo').disabled=!canImages; };
+function pickPhoto(e){ const f = e.target.files && e.target.files[0]; if(!f) return; photoFile=f; const img=$('#photoPrev'); if(img.src) URL.revokeObjectURL(img.src); img.src=URL.createObjectURL(f); $('#photoBox').hidden=false; $('#photoGo').disabled=!canImages; e.target.value=''; }
+$('#photoCam').onchange = pickPhoto; $('#photoLib').onchange = pickPhoto;
 
 
 async function shrink(file){
@@ -624,7 +633,7 @@ async function runAI(btn, input, images){
       aiResult.items.map(i=>'<div class="item small"><span class="n">'+esc(i.name)+(i.grams?' · '+Math.round(i.grams)+' g':'')+'</span><span class="pp">'+Math.round(+i.protein||0)+' g B</span><span class="k" style="font-size:15px">'+Math.round(+i.kcal||0)+'</span></div>').join('')+
       '<div class="small" style="color:var(--protein)">Białko: '+aiResult.p+' g</div>'+(aiResult.note?'<div class="note">'+esc(aiResult.note)+'</div>':'')+
       '<div class="row"><label class="small" for="aiKcal">Popraw kcal</label><input type="number" id="aiKcal" value="'+aiResult.kcal+'" style="width:100px"><button class="btn primary" id="aiAdd" style="flex:1">Dodaj do dziennika</button></div></div>';
-    $('#aiAdd').onclick = () => { const kc = +$('#aiKcal').value || aiResult.kcal; addMeal({name:aiResult.name, kcal:kc, p:aiResult.p, src: images?'zdjęcie':'opis'}); out.hidden=true; aiResult=null; if(images){ photoFile=null; $('#photoPrev').hidden=true; $('#photoTxt').hidden=false; $('#photoIn').value=''; $('#photoNote').value=''; $('#photoGo').disabled=true; } else $('#textIn').value=''; };
+    $('#aiAdd').onclick = () => { const kc = +$('#aiKcal').value || aiResult.kcal; addMeal({name:aiResult.name, kcal:kc, p:aiResult.p, src: images?'zdjęcie':'opis'}); out.hidden=true; aiResult=null; if(images){ photoFile=null; $('#photoBox').hidden=true; $('#photoNote').value=''; $('#photoGo').disabled=true; } else $('#textIn').value=''; };
   }catch(e){
     const code = e && e.code;
         out.innerHTML='<div class="result">'+(ERR[code]||'Coś poszło nie tak. Spróbuj ponownie.')+'</div>';
@@ -684,7 +693,7 @@ $('#keyGo').onclick = () => {
   const v = $('#keyIn').value.trim();
   if(!keyKind(v)){ toast('To nie wygląda na klucz Gemini (AIza… lub AQ.…). Skopiuj go jeszcze raz.'); return; }
   try{ localStorage.setItem(KEY_LS, v); }catch(e){ toast('Nie udało się zapisać klucza.'); return; }
-  $('#keyIn').value=''; applyAI(); toast('Klucz zapisany');
+  $('#keyIn').value=''; applyAI(); setMode('photo'); toast('Klucz zapisany');
 };
 $('#keyDel').onclick = () => { try{ localStorage.removeItem(KEY_LS); }catch(e){} applyAI(); toast('Klucz usunięty'); };
 $('#keyTest').onclick = async () => {

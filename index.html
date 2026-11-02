@@ -606,6 +606,8 @@ function parseLoose(t){
   const a=t.indexOf('{'), b=t.lastIndexOf('}'); if(a>=0&&b>a){ try{ return JSON.parse(t.slice(a,b+1)); }catch(e){} }
   throw {code:'invalid_json'};
 }
+let wentHidden = false;
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) wentHidden = true; });
 async function askServer(prompt, image){
   if(!navigator.onLine) throw {code:'offline'};
   const key = getKey(), kind = keyKind(key);
@@ -613,7 +615,7 @@ async function askServer(prompt, image){
     let b64 = null;
     if(image){ try{ b64 = await shrink(image); }catch(e){ throw {code:'image_rejected'}; } }
     try{ return await callGemini(key, prompt, b64); }
-    catch(e){ if(e && e.code) throw e; throw {code:'offline'}; }
+    catch(e){ if(e && e.code && e.code!=='slow') throw e; if(wentHidden) throw {code:'background'}; if(e && e.code) throw e; throw {code: navigator.onLine ? 'server' : 'offline'}; }
   }
   const body = {prompt};
   if(image){ try{ body.image = await shrink(image); }catch(e){ throw {code:'image_rejected'}; } }
@@ -627,11 +629,11 @@ async function askServer(prompt, image){
   if(!j || j.error) throw {code: (j && j.code) || 'server'};
   return j;
 }
-const ERR = {slow:'Gemini nie odpowiedział w 45 s. Spróbuj ponownie albo dodaj posiłek ręcznie.', bad_key:'Klucz AI jest nieprawidłowy. Sprawdź go w zakładce Postęp.', offline:'Brak internetu. Spróbuj, gdy wróci zasięg, albo dodaj ręcznie.', too_big:'Zdjęcie jest za duże. Wybierz inne.', server:'Serwer nie odpowiedział. Spróbuj ponownie za chwilę.', not_granted:'Nie zezwolono na użycie Claude. Dodawaj ręcznie.', sampling_disabled:'Claude jest niedostępny na tym koncie.', rate_limited:'Darmowy limit Gemini chwilowo wyczerpany. Spróbuj za minutę albo dodaj posiłek ręcznie.', image_rejected:'Tego zdjęcia nie da się odczytać. Wybierz inne (JPG lub PNG).', session_expired:'Zaloguj się ponownie do Claude.', refused:'Nie udało się ocenić tego posiłku. Opisz go słowami.', invalid_json:'Nie udało się odczytać wyniku. Spróbuj jeszcze raz.'};
+const ERR = {background:'Liczenie przerwało się, bo przełączyłeś aplikację. iPhone wstrzymuje ją w tle. Stuknij „Spróbuj ponownie” i poczekaj kilka sekund na wynik.', slow:'Gemini nie odpowiedział w 45 s. Spróbuj ponownie albo dodaj posiłek ręcznie.', bad_key:'Klucz AI jest nieprawidłowy. Sprawdź go w zakładce Postęp.', offline:'Brak internetu. Spróbuj, gdy wróci zasięg, albo dodaj ręcznie.', too_big:'Zdjęcie jest za duże. Wybierz inne.', server:'Serwer nie odpowiedział. Spróbuj ponownie za chwilę.', not_granted:'Nie zezwolono na użycie Claude. Dodawaj ręcznie.', sampling_disabled:'Claude jest niedostępny na tym koncie.', rate_limited:'Darmowy limit Gemini chwilowo wyczerpany. Spróbuj za minutę albo dodaj posiłek ręcznie.', image_rejected:'Tego zdjęcia nie da się odczytać. Wybierz inne (JPG lub PNG).', session_expired:'Zaloguj się ponownie do Claude.', refused:'Nie udało się ocenić tego posiłku. Opisz go słowami.', invalid_json:'Nie udało się odczytać wyniku. Spróbuj jeszcze raz.'};
 const PROMPT = 'Jesteś dietetykiem. Oszacuj kaloryczność posiłku zjedzonego przez dorosłego mężczyznę na diecie redukcyjnej. Rozpoznaj produkty, przyjmij realistyczne gramatury (porcje polskie, domowe) i policz kcal oraz białko. Odpowiedz wyłącznie JSON w formacie: {"name":"krótka nazwa po polsku","items":[{"name":"produkt","grams":120,"kcal":200,"protein":25}],"kcal":sumaKcal,"protein":sumaBiałka,"note":"jedno krótkie zdanie po polsku o tym, jak pewne jest oszacowanie"}.';
 async function runAI(btn, input, images){
     const out = $('#aiOut'); out.hidden=false; out.innerHTML='<div class="result"><span class="muted" id="aiWait">Liczę kalorie…</span></div>'; const t0=Date.now(); const tick=setInterval(()=>{ const w=$('#aiWait'); if(!w){ clearInterval(tick); return; } w.textContent='Liczę kalorie… '+Math.round((Date.now()-t0)/1000)+' s'; },1000);
-  btn.disabled=true;
+  btn.disabled=true; wentHidden = false;
   try{
     const r = await askServer(input, images);
     if(!r || typeof r!=='object' || !isFinite(+r.kcal)) throw {code:'invalid_json'};
@@ -643,7 +645,7 @@ async function runAI(btn, input, images){
     $('#aiAdd').onclick = () => { const kc = +$('#aiKcal').value || aiResult.kcal; addMeal({name:aiResult.name, kcal:kc, p:aiResult.p, src: images?'zdjęcie':'opis'}); out.hidden=true; aiResult=null; if(images){ photoFile=null; $('#photoBox').hidden=true; $('#photoNote').value=''; $('#photoGo').disabled=true; } else $('#textIn').value=''; };
   }catch(e){
     const code = e && e.code;
-        out.innerHTML='<div class="result">'+(ERR[code]||'Coś poszło nie tak. Spróbuj ponownie.')+'</div>';
+        out.innerHTML='<div class="result">'+(ERR[code]||'Coś poszło nie tak. Spróbuj ponownie.')+'<button class="btn primary" id="aiRetry">Spróbuj ponownie</button></div>'; $('#aiRetry').onclick = () => runAI(btn, input, images);
   }finally{ clearInterval(tick); btn.disabled = (btn.id==='photoGo') ? !(photoFile&&canImages) : false; }
 }
 $('#photoGo').onclick = () => { if(!photoFile) return; const note=$('#photoNote').value.trim(); runAI($('#photoGo'), PROMPT+' Na zdjęciu jest posiłek.'+(note?' Dopisek użytkownika: '+note:''), photoFile); };

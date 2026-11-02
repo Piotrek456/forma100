@@ -88,6 +88,22 @@
       "name": "Serek wiejski lekki 200 g (drugi kubek)",
       "kcal": 166,
       "p": 22
+    },
+    {
+      "id": "c-20261102-2415a",
+      "date": "2026-11-02",
+      "slot": "k",
+      "name": "Mleko 3,2% 300 ml",
+      "kcal": 180,
+      "p": 10
+    },
+    {
+      "id": "c-20261102-2415b",
+      "date": "2026-11-02",
+      "slot": "k",
+      "name": "Whey Mix Dzik 50 g (czekolada)",
+      "kcal": 189,
+      "p": 38
     }
   ]
 }

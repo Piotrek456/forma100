@@ -566,10 +566,10 @@ async function shrink(file){
   const url = URL.createObjectURL(file);
   try{
     const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
-    const max = 1024, sc = Math.min(1, max/Math.max(img.naturalWidth, img.naturalHeight));
+    const max = 768, sc = Math.min(1, max/Math.max(img.naturalWidth, img.naturalHeight));
     const c = document.createElement('canvas'); c.width=Math.round(img.naturalWidth*sc); c.height=Math.round(img.naturalHeight*sc);
     c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    return c.toDataURL('image/jpeg',0.8).split(',')[1];
+    return c.toDataURL('image/jpeg',0.75).split(',')[1];
   } finally { URL.revokeObjectURL(url); }
 }
 
@@ -577,10 +577,15 @@ async function callGemini(key, prompt, b64){
   const parts = [{text: prompt + '\nOdpowiedz wyłącznie obiektem JSON.'}];
   if(b64) parts.unshift({inline_data:{mime_type:'image/jpeg', data:b64}});
   let last = 0;
+  const ctl = new AbortController(), to = setTimeout(()=>ctl.abort(), 45000);
+  try{
   for(const model of ['gemini-2.5-flash','gemini-2.0-flash','gemini-flash-latest']){
+    const gc = {responseMimeType:'application/json', temperature:0.2, maxOutputTokens:1024};
+    if(model==='gemini-2.5-flash') gc.thinkingConfig = {thinkingBudget:0};
     const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent', {
       method:'POST', headers:{'content-type':'application/json','x-goog-api-key':key},
-      body: JSON.stringify({contents:[{role:'user', parts}], generationConfig:{responseMimeType:'application/json', temperature:0.2}})
+      signal: ctl.signal,
+      body: JSON.stringify({contents:[{role:'user', parts}], generationConfig:gc})
     });
     last = res.status;
     if(res.status===404) continue;
@@ -591,7 +596,9 @@ async function callGemini(key, prompt, b64){
     const txt = (((j.candidates||[])[0]||{}).content||{}).parts?.map(p=>p.text||'').join('') || '';
     return parseLoose(txt);
   }
-  throw {code: last===404 ? 'server' : 'server'};
+  throw {code:'server'};
+  } catch(e){ if(e && e.name==='AbortError') throw {code:'slow'}; throw e; }
+  finally{ clearTimeout(to); }
 }
 function parseLoose(t){
   try{ return JSON.parse(t); }catch(e){}
@@ -620,10 +627,10 @@ async function askServer(prompt, image){
   if(!j || j.error) throw {code: (j && j.code) || 'server'};
   return j;
 }
-const ERR = {bad_key:'Klucz AI jest nieprawidłowy. Sprawdź go w zakładce Postęp.', offline:'Brak internetu. Spróbuj, gdy wróci zasięg, albo dodaj ręcznie.', too_big:'Zdjęcie jest za duże. Wybierz inne.', server:'Serwer nie odpowiedział. Spróbuj ponownie za chwilę.', not_granted:'Nie zezwolono na użycie Claude. Dodawaj ręcznie.', sampling_disabled:'Claude jest niedostępny na tym koncie.', rate_limited:'Darmowy limit Gemini chwilowo wyczerpany. Spróbuj za minutę albo dodaj posiłek ręcznie.', image_rejected:'Tego zdjęcia nie da się odczytać. Wybierz inne (JPG lub PNG).', session_expired:'Zaloguj się ponownie do Claude.', refused:'Nie udało się ocenić tego posiłku. Opisz go słowami.', invalid_json:'Nie udało się odczytać wyniku. Spróbuj jeszcze raz.'};
+const ERR = {slow:'Gemini nie odpowiedział w 45 s. Spróbuj ponownie albo dodaj posiłek ręcznie.', bad_key:'Klucz AI jest nieprawidłowy. Sprawdź go w zakładce Postęp.', offline:'Brak internetu. Spróbuj, gdy wróci zasięg, albo dodaj ręcznie.', too_big:'Zdjęcie jest za duże. Wybierz inne.', server:'Serwer nie odpowiedział. Spróbuj ponownie za chwilę.', not_granted:'Nie zezwolono na użycie Claude. Dodawaj ręcznie.', sampling_disabled:'Claude jest niedostępny na tym koncie.', rate_limited:'Darmowy limit Gemini chwilowo wyczerpany. Spróbuj za minutę albo dodaj posiłek ręcznie.', image_rejected:'Tego zdjęcia nie da się odczytać. Wybierz inne (JPG lub PNG).', session_expired:'Zaloguj się ponownie do Claude.', refused:'Nie udało się ocenić tego posiłku. Opisz go słowami.', invalid_json:'Nie udało się odczytać wyniku. Spróbuj jeszcze raz.'};
 const PROMPT = 'Jesteś dietetykiem. Oszacuj kaloryczność posiłku zjedzonego przez dorosłego mężczyznę na diecie redukcyjnej. Rozpoznaj produkty, przyjmij realistyczne gramatury (porcje polskie, domowe) i policz kcal oraz białko. Odpowiedz wyłącznie JSON w formacie: {"name":"krótka nazwa po polsku","items":[{"name":"produkt","grams":120,"kcal":200,"protein":25}],"kcal":sumaKcal,"protein":sumaBiałka,"note":"jedno krótkie zdanie po polsku o tym, jak pewne jest oszacowanie"}.';
 async function runAI(btn, input, images){
-    const out = $('#aiOut'); out.hidden=false; out.innerHTML='<div class="result"><span class="muted">Liczę kalorie…</span></div>';
+    const out = $('#aiOut'); out.hidden=false; out.innerHTML='<div class="result"><span class="muted" id="aiWait">Liczę kalorie…</span></div>'; const t0=Date.now(); const tick=setInterval(()=>{ const w=$('#aiWait'); if(!w){ clearInterval(tick); return; } w.textContent='Liczę kalorie… '+Math.round((Date.now()-t0)/1000)+' s'; },1000);
   btn.disabled=true;
   try{
     const r = await askServer(input, images);
@@ -637,7 +644,7 @@ async function runAI(btn, input, images){
   }catch(e){
     const code = e && e.code;
         out.innerHTML='<div class="result">'+(ERR[code]||'Coś poszło nie tak. Spróbuj ponownie.')+'</div>';
-  }finally{ btn.disabled = (btn.id==='photoGo') ? !(photoFile&&canImages) : false; }
+  }finally{ clearInterval(tick); btn.disabled = (btn.id==='photoGo') ? !(photoFile&&canImages) : false; }
 }
 $('#photoGo').onclick = () => { if(!photoFile) return; const note=$('#photoNote').value.trim(); runAI($('#photoGo'), PROMPT+' Na zdjęciu jest posiłek.'+(note?' Dopisek użytkownika: '+note:''), photoFile); };
 $('#textGo').onclick = () => { const t=$('#textIn').value.trim(); if(!t){ toast('Opisz, co zjadłeś.'); return; } runAI($('#textGo'), PROMPT+' Opis posiłku: '+t.slice(0,2000)); };

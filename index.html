@@ -574,9 +574,10 @@ async function shrink(file){
 }
 
 function geminiUrl(key, model){
-  return 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent';
+  return 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key);
 }
 async function callGemini(key, prompt, b64){
+  let last404 = '';
   const parts = [{text: prompt + '\nOdpowiedz wyłącznie obiektem JSON.'}];
   if(b64) parts.unshift({inline_data:{mime_type:'image/jpeg', data:b64}});
   let last = 0;
@@ -586,12 +587,12 @@ async function callGemini(key, prompt, b64){
     const gc = {responseMimeType:'application/json', temperature:0.2, maxOutputTokens:700};
     if(/2\.5/.test(model)) gc.thinkingConfig = {thinkingBudget:0};
     const res = await fetch(geminiUrl(key, model), {
-      method:'POST', headers:{'content-type':'application/json','x-goog-api-key':key},
+      method:'POST', headers:{'content-type':'application/json'},
       signal: ctl.signal,
       body: JSON.stringify({contents:[{role:'user', parts}], generationConfig:gc})
     });
     last = res.status;
-    if(res.status===404) continue;
+    if(res.status===404){ last404 = (await res.text().catch(()=>'')).slice(0,160); continue; }
     if(res.status===429) throw {code:'rate_limited'};
     if(res.status===400 || res.status===401 || res.status===403){ const t = await res.text().catch(()=>''); if(/API key|API_KEY|PERMISSION/i.test(t)) throw {code:'bad_key'}; throw {code:'server', detail: model+' · '+res.status+': '+t.slice(0,180)}; }
     if(!res.ok){ const t = await res.text().catch(()=>''); throw {code:'server', detail: model+' · '+res.status+': '+t.slice(0,180)}; }
@@ -599,7 +600,7 @@ async function callGemini(key, prompt, b64){
     const txt = (((j.candidates||[])[0]||{}).content||{}).parts?.map(p=>p.text||'').join('') || '';
     return parseLoose(txt);
   }
-  throw {code:'server', detail: 'żaden model nie odpowiedział (ostatni status '+last+')'};
+  throw {code:'server', detail: 'żaden model nie odpowiedział (status '+last+'): '+last404};
   } catch(e){ if(e && e.name==='AbortError') throw {code:'slow'}; throw e; }
   finally{ clearTimeout(to); }
 }

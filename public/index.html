@@ -262,7 +262,8 @@ nav button[aria-current=page]{color:var(--accent)}
     <div class="card">
       <h3>Liczenie kalorii (darmowy klucz Gemini)</h3>
       <p class="note" style="margin:0">Darmowy klucz utworzysz na <b>aistudio.google.com/apikey</b> (przycisk „Create API key”). Zaczyna się od <b>AIza</b> albo <b>AQ.</b> Klucz zostaje tylko w tym telefonie.</p>
-      <div class="stepsin"><input type="password" id="keyIn" autocomplete="off" placeholder="Wklej klucz Gemini"><button class="btn primary" id="keyGo">Zapisz</button></div>
+      <div class="stepsin"><input type="password" id="keyIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Wklej klucz Gemini"><button class="btn primary" id="keyGo">Zapisz</button></div>
+      <label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="keyShow" style="width:auto"> pokaż klucz, żeby sprawdzić</label>
       <div class="row"><span class="pill" id="keyState">brak klucza</span><button class="btn sm" id="keyTest">Sprawdź klucz</button><button class="btn sm" id="keyDel">Usuń</button></div>
       <h3 style="margin-top:8px">Ustawienia</h3>
       <label class="small" for="startIn">Pierwszy dzień planu</label>
@@ -699,7 +700,7 @@ function applyAI(){
   if(on && mode==='hand' && !applyAI.done) setMode('photo');
   applyAI.done = true;
   const k = getKey(), kind = keyKind(k);
-  $('#keyState').textContent = kind ? 'Gemini ✓' : 'brak klucza';
+  $('#keyState').textContent = kind ? 'Gemini ✓, koniec klucza: …'+k.slice(-6)+' ('+k.length+' znaków)' : 'brak klucza';
   $('#keyState').className = 'pill' + (kind ? ' good' : '');
 }
 $('#keyGo').onclick = () => {
@@ -708,6 +709,7 @@ $('#keyGo').onclick = () => {
   try{ localStorage.setItem(KEY_LS, v); }catch(e){ toast('Nie udało się zapisać klucza.'); return; }
   $('#keyIn').value=''; applyAI(); setMode('photo'); toast('Klucz zapisany');
 };
+$('#keyShow').onchange = e => { $('#keyIn').type = e.target.checked ? 'text' : 'password'; };
 $('#keyDel').onclick = () => { try{ localStorage.removeItem(KEY_LS); }catch(e){} applyAI(); toast('Klucz usunięty'); };
 $('#keyTest').onclick = async () => {
   const b = $('#keyTest'); b.disabled = true; b.textContent = 'Sprawdzam…';

@@ -184,6 +184,14 @@
       "name": "Whey Mix Dzik 50 g (czekolada)",
       "kcal": 189,
       "p": 38
+    },
+    {
+      "id": "c-20261103-0037",
+      "date": "2026-11-03",
+      "slot": "p",
+      "name": "Żywiec Zdrój o smaku truskawkowym 200 ml",
+      "kcal": 35,
+      "p": 0
     }
   ]
 }

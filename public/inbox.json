@@ -112,6 +112,14 @@
       "name": "Herbata 300 ml z 2 łyżeczkami cukru",
       "kcal": 35,
       "p": 0
+    },
+    {
+      "id": "c-20261103-0821",
+      "date": "2026-11-03",
+      "slot": "s",
+      "name": "Serek wiejski z truskawkami 150 g (cały kubek)",
+      "kcal": 165,
+      "p": 13
     }
   ]
 }

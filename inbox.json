@@ -136,6 +136,22 @@
       "name": "Łosoś atlantycki pieczony z czosnkiem niedźwiedzim 150 g",
       "kcal": 347,
       "p": 33
+    },
+    {
+      "id": "c-20261103-0834a",
+      "date": "2026-11-03",
+      "slot": "s",
+      "name": "Mleko 3,2% 400 ml",
+      "kcal": 240,
+      "p": 13
+    },
+    {
+      "id": "c-20261103-0834b",
+      "date": "2026-11-03",
+      "slot": "s",
+      "name": "Whey Mix Dzik 66 g (czekolada)",
+      "kcal": 249,
+      "p": 50
     }
   ]
 }

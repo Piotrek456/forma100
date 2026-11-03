@@ -120,6 +120,22 @@
       "name": "Serek wiejski z truskawkami 150 g (cały kubek)",
       "kcal": 165,
       "p": 13
+    },
+    {
+      "id": "c-20261103-0832a",
+      "date": "2026-11-03",
+      "slot": "o",
+      "name": "Pęczak kujawski suchy 100 g",
+      "kcal": 333,
+      "p": 11
+    },
+    {
+      "id": "c-20261103-0832b",
+      "date": "2026-11-03",
+      "slot": "o",
+      "name": "Łosoś atlantycki pieczony z czosnkiem niedźwiedzim 150 g",
+      "kcal": 347,
+      "p": 33
     }
   ]
 }

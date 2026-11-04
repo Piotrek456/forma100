@@ -232,6 +232,22 @@
       "name": "Jajecznica z 5 jajek M, masło 5 g (łyżeczka)",
       "kcal": 395,
       "p": 31
+    },
+    {
+      "id": "c-20261105-0045a",
+      "date": "2026-11-04",
+      "slot": "p",
+      "name": "Kawa z expresu 3 x 150 ml, bez cukru",
+      "kcal": 6,
+      "p": 0
+    },
+    {
+      "id": "c-20261105-0045b",
+      "date": "2026-11-04",
+      "slot": "p",
+      "name": "Kawa z mlekiem 3,2% 200 ml, bez cukru",
+      "kcal": 120,
+      "p": 7
     }
   ]
 }

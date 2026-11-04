@@ -272,6 +272,14 @@
       "name": "Whey Mix Dzik 33 g (czekolada)",
       "kcal": 125,
       "p": 25
+    },
+    {
+      "id": "c-20261105-0056",
+      "date": "2026-11-04",
+      "slot": "p",
+      "name": "Druga kawa z mlekiem 3,2% 200 ml, bez cukru",
+      "kcal": 120,
+      "p": 7
     }
   ]
 }

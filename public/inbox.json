@@ -256,6 +256,22 @@
       "name": "Żywiec Zdrój o smaku truskawkowym 500 ml",
       "kcal": 88,
       "p": 0
+    },
+    {
+      "id": "c-20261105-0052a",
+      "date": "2026-11-04",
+      "slot": "k",
+      "name": "Mleko 3,2% 200 ml",
+      "kcal": 120,
+      "p": 7
+    },
+    {
+      "id": "c-20261105-0052b",
+      "date": "2026-11-04",
+      "slot": "k",
+      "name": "Whey Mix Dzik 33 g (czekolada)",
+      "kcal": 125,
+      "p": 25
     }
   ]
 }

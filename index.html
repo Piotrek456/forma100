@@ -246,6 +246,7 @@ nav button[aria-current=page]{color:var(--accent)}
     <div class="card">
       <h2>Waga dziś</h2>
       <div class="stepsin"><input type="number" id="wIn" step="0.1" inputmode="decimal" placeholder="np. 89,4"><button class="btn primary" id="wGo">Zapisz</button></div>
+      <div class="stepsin"><input type="number" id="bfIn" step="0.1" inputmode="decimal" placeholder="Tkanka tłuszczowa % (z wagi, opcjonalnie)"></div>
       <p class="note" style="margin:0">Waż się rano, po toalecie, przed jedzeniem.</p>
     </div>
   </section>
@@ -500,6 +501,7 @@ function renderTraining(){
   $('#stepsBar').firstElementChild.style.width = Math.min(100, st/10000*100)+'%';
   $('#stepsIn').value = day.steps ?? '';
   $('#wIn').value = day.weight ?? '';
+  $('#bfIn').value = day.bf ?? '';
 }
 function lineChart(points, opts){
   // points: [{x:dayNo,y}], opts: {yMin,yMax,target:[[x,y],[x,y]],unit}
@@ -529,7 +531,9 @@ function renderProgress(){
   const avg = last7.length ? (last7.reduce((a,b)=>a+b,0)/last7.length) : null;
   const n = Math.min(100, Math.max(1, dayNo(keyOf(new Date()))));
   const planNow = 90 - 12*(n-1)/99;
-  $('#wStats').innerHTML = '<span class="pill">teraz: '+(lw? String(lw).replace('.',',')+' kg':'–')+'</span><span class="pill">średnia 7 dni: '+(avg? avg.toFixed(1).replace('.',',')+' kg':'–')+'</span><span class="pill good">plan na dziś: '+planNow.toFixed(1).replace('.',',')+' kg</span>';
+  const lbf = (()=>{ const kk = ks.filter(k=>days[k].bf && k<=keyOf(new Date())); return kk.length ? days[kk[kk.length-1]].bf : null; })();
+  const bmi = lw ? lw/(1.77*1.77) : null;
+  $('#wStats').innerHTML = '<span class="pill">teraz: '+(lw? String(lw).replace('.',',')+' kg':'–')+'</span><span class="pill">średnia 7 dni: '+(avg? avg.toFixed(1).replace('.',',')+' kg':'–')+'</span><span class="pill good">plan na dziś: '+planNow.toFixed(1).replace('.',',')+' kg</span><span class="pill">BMI: '+(bmi? bmi.toFixed(1).replace('.',',')+' (cel 24,9)':'–')+'</span><span class="pill">tkanka tłuszczowa: '+(lbf? String(lbf).replace('.',',')+' %':'–')+'</span>';
   const pp = ks.filter(k=>(days[k].test||days[k].max) && dayNo(k)>=1 && dayNo(k)<=100).map(k=>({x:dayNo(k), y:Math.max(days[k].test||0, days[k].max||0)}));
   $('#pChart').innerHTML = lineChart(pp, {yMin:0,yMax:50,step:10,target:[[1,8],[100,50]],unit:'',aria:'Wykres maksymalnej liczby pompek w serii',empty:'Wpisz wynik serii MAX po treningu'});
   const recent = ks.filter(k=>k<=keyOf(new Date())).slice(-10).reverse();
@@ -691,7 +695,7 @@ $('#pushCard').addEventListener('click', e => {
   else if(b.id==='testGo'){ const v=+$('#testIn').value; if(!v){ toast('Wpisz wynik.'); return; } day.test=v; saveDay(view); renderTraining(); toast('Wynik testu: '+v); }
 });
 $('#stepsGo').onclick = () => { const v=Math.round(+$('#stepsIn').value); if(!(v>=0)){ return; } getDay(view).steps=v; saveDay(view); renderTraining(); toast('Kroki zapisane'); };
-$('#wGo').onclick = () => { const v=+String($('#wIn').value).replace(',','.'); if(!(v>40&&v<200)){ toast('Wpisz wagę w kg.'); return; } getDay(view).weight=Math.round(v*10)/10; saveDay(view); renderTraining(); toast('Waga zapisana'); };
+$('#wGo').onclick = () => { const v=+String($('#wIn').value).replace(',','.'); if(!(v>40&&v<200)){ toast('Wpisz wagę w kg.'); return; } const bf=+String($('#bfIn').value).replace(',','.'); const d=getDay(view); d.weight=Math.round(v*10)/10; if(bf>3&&bf<60) d.bf=Math.round(bf*10)/10; saveDay(view); renderTraining(); toast('Waga zapisana'); };
 $('#startGo').onclick = () => { const v=$('#startIn').value; if(!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; profile.start=v; saveProfile(); render(); toast('Start planu: '+v); };
 
 // ---------- init

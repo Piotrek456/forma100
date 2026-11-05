@@ -312,6 +312,22 @@
       "name": "Twaróg wiejski chudy Piątnica 250 g (cały)",
       "kcal": 225,
       "p": 48
+    },
+    {
+      "id": "c-20261105-2029a",
+      "date": "2026-11-05",
+      "slot": "k",
+      "name": "Kotlety mielone smażone na oleju 90 g (2 sztuki)",
+      "kcal": 230,
+      "p": 16
+    },
+    {
+      "id": "c-20261105-2029b",
+      "date": "2026-11-05",
+      "slot": "k",
+      "name": "Jajecznica 128 g (na maśle lub oleju, szacunek)",
+      "kcal": 205,
+      "p": 16
     }
   ]
 }

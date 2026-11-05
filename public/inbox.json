@@ -280,6 +280,22 @@
       "name": "Druga kawa z mlekiem 3,2% 200 ml, bez cukru",
       "kcal": 120,
       "p": 7
+    },
+    {
+      "id": "c-20261105-0838a",
+      "date": "2026-11-05",
+      "slot": "s",
+      "name": "Kawa z fusami 250 ml, bez cukru",
+      "kcal": 5,
+      "p": 0
+    },
+    {
+      "id": "c-20261105-0838b",
+      "date": "2026-11-05",
+      "slot": "s",
+      "name": "Owsianka: mleko 3,2% 250 ml, płatki 70 g, Whey Mix Dzik 33 g, jabłko małe",
+      "kcal": 607,
+      "p": 42
     }
   ]
 }

@@ -328,6 +328,14 @@
       "name": "Jajecznica 128 g (na maśle lub oleju, szacunek)",
       "kcal": 205,
       "p": 16
+    },
+    {
+      "id": "c-20261105-2107",
+      "date": "2026-11-05",
+      "slot": "p",
+      "name": "Pomidory 151 g",
+      "kcal": 41,
+      "p": 2
     }
   ]
 }

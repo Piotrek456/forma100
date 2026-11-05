@@ -296,6 +296,22 @@
       "name": "Owsianka: mleko 3,2% 250 ml, płatki 70 g, Whey Mix Dzik 33 g, jabłko małe",
       "kcal": 607,
       "p": 42
+    },
+    {
+      "id": "c-20261105-1315a",
+      "date": "2026-11-05",
+      "slot": "o",
+      "name": "Kanapka 200 g",
+      "kcal": 528,
+      "p": 28
+    },
+    {
+      "id": "c-20261105-1315b",
+      "date": "2026-11-05",
+      "slot": "o",
+      "name": "Twaróg wiejski chudy Piątnica 250 g (cały)",
+      "kcal": 225,
+      "p": 48
     }
   ]
 }

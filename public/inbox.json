@@ -360,6 +360,22 @@
       "name": "Sushi Toshii, zestaw 400 g (cały)",
       "kcal": 584,
       "p": 15
+    },
+    {
+      "id": "c-20261106-2237a",
+      "date": "2026-11-06",
+      "slot": "k",
+      "name": "Parówki Sokoliki drobiowo-cielęce 3 szt. (ok. 84 g)",
+      "kcal": 156,
+      "p": 13
+    },
+    {
+      "id": "c-20261106-2237b",
+      "date": "2026-11-06",
+      "slot": "k",
+      "name": "Pstrąg tęczowy wędzony, filet Biedronka 98 g (cały)",
+      "kcal": 202,
+      "p": 17
     }
   ]
 }

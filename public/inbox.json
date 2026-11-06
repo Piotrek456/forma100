@@ -336,6 +336,22 @@
       "name": "Pomidory 151 g",
       "kcal": 41,
       "p": 2
+    },
+    {
+      "id": "c-20261106-1358a",
+      "date": "2026-11-06",
+      "slot": "p",
+      "name": "Jogurt pitny typu islandzkiego naturalny (Biedronka) 330 g (cały)",
+      "kcal": 241,
+      "p": 26
+    },
+    {
+      "id": "c-20261106-1358b",
+      "date": "2026-11-06",
+      "slot": "p",
+      "name": "Twaróg Klinek chudy Delikate (Biedronka) 250 g (cały)",
+      "kcal": 213,
+      "p": 40
     }
   ]
 }

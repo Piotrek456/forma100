@@ -417,6 +417,22 @@
       "name": "Surówka coleslaw Vital Fresh 154 g",
       "kcal": 154,
       "p": 2
+    },
+    {
+      "id": "c-20261107-1244a",
+      "date": "2026-11-07",
+      "slot": "p",
+      "name": "Mleko 1,5% 400 ml",
+      "kcal": 188,
+      "p": 14
+    },
+    {
+      "id": "c-20261107-1244b",
+      "date": "2026-11-07",
+      "slot": "p",
+      "name": "Whey Mix Dzik 66 g (czekolada)",
+      "kcal": 249,
+      "p": 50
     }
   ]
 }

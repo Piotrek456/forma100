@@ -384,6 +384,30 @@
       "name": "Rogalik maślany Marcinkowski (Biedronka) 107 g",
       "kcal": 428,
       "p": 9
+    },
+    {
+      "id": "c-20261107-1236a",
+      "date": "2026-11-07",
+      "slot": "o",
+      "name": "Ryż Natural Mix parboiled z warzywami, suchy 100 g",
+      "kcal": 341,
+      "p": 9
+    },
+    {
+      "id": "c-20261107-1236b",
+      "date": "2026-11-07",
+      "slot": "o",
+      "name": "Sos bolognese z torebki Winiary, z mięsem, 150 g (szacunek)",
+      "kcal": 180,
+      "p": 12
+    },
+    {
+      "id": "c-20261107-1236c",
+      "date": "2026-11-07",
+      "slot": "o",
+      "name": "Surówka coleslaw Vital Fresh 154 g",
+      "kcal": 154,
+      "p": 2
     }
   ]
 }

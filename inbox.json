@@ -402,6 +402,15 @@
       "p": 12
     },
     {
+      "id": "c-20261107-1238b",
+      "replaces": "c-20261107-1236b",
+      "date": "2026-11-07",
+      "slot": "o",
+      "name": "Sos bolognese z torebki Winiary, 150 g, około 50% mięsa mielonego",
+      "kcal": 250,
+      "p": 15
+    },
+    {
       "id": "c-20261107-1236c",
       "date": "2026-11-07",
       "slot": "o",

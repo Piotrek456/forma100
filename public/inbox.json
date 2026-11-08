@@ -465,6 +465,14 @@
       "name": "Filet z piersi z kurczaka pieczony 150 g (ważony po pieczeniu, szacunek)",
       "kcal": 248,
       "p": 46
+    },
+    {
+      "id": "c-20261107-1049",
+      "date": "2026-11-07",
+      "slot": "k",
+      "name": "Łosoś pieczony 150 g",
+      "kcal": 347,
+      "p": 33
     }
   ]
 }
